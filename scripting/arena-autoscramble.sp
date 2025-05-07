@@ -24,6 +24,8 @@ public void OnPluginStart() {
 }
 
 public void OnMapStart() {
+    g_iBluWinStreak = 0;
+    g_iRedWinStreak = 0;
     int teamEnt = -1;
     while ((teamEnt = FindEntityByClassname(teamEnt, "tf_team")) != -1) {
         switch (GetEntProp(teamEnt, Prop_Send, "m_iTeamNum")) {

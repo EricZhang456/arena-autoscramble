@@ -20,7 +20,7 @@ public Plugin myinfo = {
 
 public void OnPluginStart() {
     g_cvArenaMaxStreak = FindConVar("tf_arena_max_streak");
-    HookEvent("arena_win_panel", Event_ArenaWin)
+    HookEvent("arena_win_panel", Event_ArenaWin);
 }
 
 public void OnMapStart() {

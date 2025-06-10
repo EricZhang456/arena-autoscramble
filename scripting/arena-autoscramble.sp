@@ -25,8 +25,9 @@ public void OnPluginStart() {
     g_cvArenaUseQueue = FindConVar("tf_arena_use_queue");
     g_cvArenaMaxStreak = FindConVar("tf_arena_max_streak");
     HookEvent("arena_win_panel", Event_ArenaWin);
-    HookEvent("round_start", Event_RoundStart, EventHookMode_PostNoCopy);
+    HookEvent("teamplay_round_start", Event_RoundStart, EventHookMode_PostNoCopy);
     HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
+    PrecacheScriptSound("Announcer.AM_TeamScrambleRandom");
 }
 
 public void OnMapStart() {
@@ -42,9 +43,11 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
         arenaScrambleEvent.SetInt("streak", g_cvArenaMaxStreak.IntValue);
         arenaScrambleEvent.SetInt("team", g_iBluWinStreak >= g_cvArenaMaxStreak.IntValue ? TFTeam_Blue : TFTeam_Red);
         arenaScrambleEvent.Fire();
+        EmitSoundToAll("Announcer.AM_TeamScrambleRandom");
         g_bAutoScrambleInProgress = true;
         ScrambleTeams();
         g_bAutoScrambleInProgress = false;
+        ForceRespawn();
         g_bScrambleNextRound = false;
         g_iBluWinStreak = 0;
         g_iRedWinStreak = 0;
@@ -76,4 +79,18 @@ public void Event_ArenaWin(Event event, const char[] name, bool dontBroadcast) {
     if (g_iBluWinStreak >= g_cvArenaMaxStreak.IntValue || g_iRedWinStreak >= g_cvArenaMaxStreak.IntValue) {
         g_bScrambleNextRound = true;
     }
+}
+
+void ForceRespawn() {
+	int flags = GetCommandFlags("mp_forcerespawnplayers");
+	SetCommandFlags("mp_forcerespawnplayers", flags & ~FCVAR_CHEAT);
+	ServerCommand("mp_forcerespawnplayers");
+	// wait 0.1 seconds before resetting flag or else it would complain
+	// about not having sv_cheats 1
+	CreateTimer(0.1, Post_RespawnCommandRun, flags);
+}
+
+public Action Post_RespawnCommandRun(Handle timer, int flags) {
+	SetCommandFlags("mp_forcerespawnplayers", flags);
+	return Plugin_Continue;
 }

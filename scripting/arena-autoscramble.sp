@@ -7,9 +7,6 @@
 ConVar g_cvArenaUseQueue;
 ConVar g_cvArenaMaxStreak;
 
-int g_iBluWinStreak = 0;
-int g_iRedWinStreak = 0;
-
 bool g_bAutoScrambleInProgress;
 bool g_bScrambleNextRound;
 
@@ -31,8 +28,6 @@ public void OnPluginStart() {
 }
 
 public void OnMapStart() {
-    g_iBluWinStreak = 0;
-    g_iRedWinStreak = 0;
     g_bAutoScrambleInProgress = false;
     g_bScrambleNextRound = false;
 }
@@ -41,16 +36,13 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
     if (g_bScrambleNextRound) {
         Event arenaScrambleEvent = CreateEvent("arena_match_maxstreak");
         arenaScrambleEvent.SetInt("streak", g_cvArenaMaxStreak.IntValue);
-        arenaScrambleEvent.SetInt("team", g_iBluWinStreak >= g_cvArenaMaxStreak.IntValue ? TFTeam_Blue : TFTeam_Red);
+        arenaScrambleEvent.SetInt("team", GetTeamScore(TFTeam_Blue) >= g_cvArenaMaxStreak.IntValue ? TFTeam_Blue : TFTeam_Red);
         arenaScrambleEvent.Fire();
         EmitSoundToAll("Announcer.AM_TeamScrambleRandom");
         g_bAutoScrambleInProgress = true;
         ScrambleTeams();
         g_bAutoScrambleInProgress = false;
-        ForceRespawn();
         g_bScrambleNextRound = false;
-        g_iBluWinStreak = 0;
-        g_iRedWinStreak = 0;
     }
 }
 
@@ -65,32 +57,8 @@ public void Event_ArenaWin(Event event, const char[] name, bool dontBroadcast) {
     if (g_cvArenaUseQueue.BoolValue) {
         return;
     }
-    switch (event.GetInt("winning_team")) {
-        case TFTeam_Blue: {
-            g_iBluWinStreak++;
-        }
-        case TFTeam_Red: {
-            g_iRedWinStreak++;
-        }
-        default: {
-            return;
-        }
-    }
-    if (g_iBluWinStreak >= g_cvArenaMaxStreak.IntValue || g_iRedWinStreak >= g_cvArenaMaxStreak.IntValue) {
+    if (GetTeamScore(TFTeam_Red) >= g_cvArenaMaxStreak.IntValue
+        || GetTeamScore(TFTeam_Blue) >= g_cvArenaMaxStreak.IntValue) {
         g_bScrambleNextRound = true;
     }
-}
-
-void ForceRespawn() {
-	int flags = GetCommandFlags("mp_forcerespawnplayers");
-	SetCommandFlags("mp_forcerespawnplayers", flags & ~FCVAR_CHEAT);
-	ServerCommand("mp_forcerespawnplayers");
-	// wait 0.1 seconds before resetting flag or else it would complain
-	// about not having sv_cheats 1
-	CreateTimer(0.1, Post_RespawnCommandRun, flags);
-}
-
-public Action Post_RespawnCommandRun(Handle timer, int flags) {
-	SetCommandFlags("mp_forcerespawnplayers", flags);
-	return Plugin_Continue;
 }

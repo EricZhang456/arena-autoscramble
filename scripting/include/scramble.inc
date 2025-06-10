@@ -15,10 +15,6 @@ enum struct ScoreData
 
 void ScrambleTeams()
 {
-	Event scramble_team_alert = CreateEvent("teamplay_alert");
-	scramble_team_alert.SetInt("alert_type", 0);
-	scramble_team_alert.Fire();
-
 	g_iPlayerManager = GetPlayerResourceEntity();
 	int ent = -1;
 	while ((ent = FindEntityByClassname(ent, "tf_team")) != -1)
@@ -107,6 +103,8 @@ void ScrambleTeams()
 	//reset scores
 	TF2_ResetTeamScore(RED);
 	TF2_ResetTeamScore(BLU);
+
+	ForceRespawn();
 
 	//reset setup timer
 	int timer = FindEntityByClassname(-1, "team_round_timer");
@@ -222,6 +220,21 @@ int GetTeamScoreDiff(ArrayList clientList, int &score_red, int &score_blue)
 	//abs value
 	int diff = score_red - score_blue;
 	return abs(diff);
+}
+
+void ForceRespawn()
+{
+	int flags = GetCommandFlags("mp_forcerespawnplayers");
+	SetCommandFlags("mp_forcerespawnplayers", flags & ~FCVAR_CHEAT);
+	ServerCommand("mp_forcerespawnplayers");
+	// wait 0.1 seconds before resetting flag or else it would complain
+	// about not having sv_cheats 1
+	CreateTimer(0.1, Post_RespawnCommandRun, flags);
+}
+
+public Action Post_RespawnCommandRun(Handle timer, int flags) {
+	SetCommandFlags("mp_forcerespawnplayers", flags);
+	return Plugin_Continue;
 }
 
 int abs(int x)
